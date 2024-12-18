@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Piano Visualizer with Grand Staff & Measures (Chords & Undo/Redo)</title>
+<style>
+ body {
+  font-family: "Trebuchet MS", sans-serif;
+  text-align: center;
+  margin: 20px;
+  background: linear-gradient(135deg, #101010 0%, #222222 100%);
+  color: #e0e0e0;
+}
+
+h1 {
+  margin-bottom: 10px;
+  font-weight: 300;
+  color: #f0f0f0;
+}
+
+#staff-container {
+  margin: 20px auto;
+  width: 90%;
+  border: 2px solid #444;
+  position: relative;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 10px;
+  border-radius: 6px;
+  background: whitesmoke;
+}
+
+#piano {
+  position: relative;
+  margin: 20px auto;
+  height: 200px;
+  width: 1160px;
+  background: #000;
+  border: 2px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 0 10px #000;
+  overflow: hidden;
+}
+
+.white-key, .black-key {
+  position: absolute;
+  top: 0;
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+  font-family: sans-serif;
+  box-sizing: border-box;
+  border: 1px solid #000;
+}
+
+.white-key {
+  width: 40px;
+  height: 200px;
+  background: #fdfdfd;
+  z-index: 1;
+  border-radius: 0 0 3px 3px;
+  box-shadow: inset 0 0 2px #aaa;
+  font-weight: bold;
+  line-height: 360px;
+  color: #333;
+  transition: background 0.2s;
+}
+
+.white-key:hover {
+  background: #f0f0f0;
+}
+
+.black-key {
+  width: 25px;
+  height: 120px;
+  background: #111;
+  z-index: 2;
+  border: 1px solid #000;
+  border-radius: 0 0 3px 3px;
+  box-shadow: inset 0 0 2px #000;
+  transition: background 0.2s;
+}
+
+.black-key:hover {
+  background: #333;
+}
+
+#controls {
+  margin: 20px 0;
+}
+
+#time-signature-select, #clear-staff, #toggle-chord-mode, #add-chord, #undo-btn, #redo-btn, #key-signature-select {
+  font-size: 16px;
+  padding: 8px 12px;
+  margin: 0 5px;
+  border: 1px solid #555;
+  background: #333;
+  color: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#time-signature-select:hover, #clear-staff:hover, #toggle-chord-mode:hover, #add-chord:hover, #undo-btn:hover, #redo-btn:hover, #key-signature-select:hover {
+  background: #444;
+}
+</style>
+</head>
+<body>
+  <h1>Interactive Piano with Grand Staff & Measures (Chords & Undo/Redo)</h1>
+  <div id="controls">
+    <select id="time-signature-select">
+      <option value="4/4" selected>4/4</option>
+      <option value="3/4">3/4</option>
+      <option value="6/8">6/8</option>
+      <option value="12/8">12/8</option>
+    </select>
+    
+    <!-- All major and minor keys -->
+    <select id="key-signature-select">
+      <!-- Major Keys -->
+      <option value="C">C Major</option>
+      <option value="G">G Major</option>
+      <option value="D">D Major</option>
+      <option value="A">A Major</option>
+      <option value="E">E Major</option>
+      <option value="B">B Major</option>
+      <option value="F#">F# Major</option>
+      <option value="C#">C# Major</option>
+      <option value="F">F Major</option>
+      <option value="Bb">Bb Major</option>
+      <option value="Eb">Eb Major</option>
+      <option value="Ab">Ab Major</option>
+      <option value="Db">Db Major</option>
+      <option value="Gb">Gb Major</option>
+      
+      <!-- Minor Keys (relative minors) -->
+      <option value="Am">A Minor</option>
+      <option value="Em">E Minor</option>
+      <option value="Bm">B Minor</option>
+      <option value="F#m">F# Minor</option>
+      <option value="C#m">C# Minor</option>
+      <option value="G#m">G# Minor</option>
+      <option value="D#m">D# Minor</option>
+      <option value="A#m">A# Minor</option>
+      <option value="Dm">D Minor</option>
+      <option value="Gm">G Minor</option>
+      <option value="Cm">C Minor</option>
+      <option value="Fm">F Minor</option>
+      <option value="Bbm">Bb Minor</option>
+      <option value="Ebm">Eb Minor</option>
+    </select>
+
+    <button id="clear-staff">Clear Staff</button>
+    <button id="toggle-chord-mode">Chord Mode: OFF</button>
+    <button id="add-chord" disabled>Add Chord</button>
+    <button id="undo-btn" disabled>Undo</button>
+    <button id="redo-btn" disabled>Redo</button>
+  </div>
+
+  <div id="staff-container">
+    <div id="staff"></div>
+  </div>
+
+  <div id="piano">
+    <!-- C2–B2 -->
+    <div class="white-key" data-note="C2" style="left:0px;">C2</div>
+    <div class="black-key" data-note="C#2" style="left:28px;"></div>
+    <div class="white-key" data-note="D2" style="left:40px;">D2</div>
+    <div class="black-key" data-note="D#2" style="left:68px;"></div>
+    <div class="white-key" data-note="E2" style="left:80px;">E2</div>
+    <div class="white-key" data-note="F2" style="left:120px;">F2</div>
+    <div class="black-key" data-note="F#2" style="left:148px;"></div>
+    <div class="white-key" data-note="G2" style="left:160px;">G2</div>
+    <div class="black-key" data-note="G#2" style="left:188px;"></div>
+    <div class="white-key" data-note="A2" style="left:200px;">A2</div>
+    <div class="black-key" data-note="A#2" style="left:228px;"></div>
+    <div class="white-key" data-note="B2" style="left:240px;">B2</div>
+
+    <!-- C3–B3 -->
+    <div class="white-key" data-note="C3" style="left:280px;">C3</div>
+    <div class="black-key" data-note="C#3" style="left:308px;"></div>
+    <div class="white-key" data-note="D3" style="left:320px;">D3</div>
+    <div class="black-key" data-note="D#3" style="left:348px;"></div>
+    <div class="white-key" data-note="E3" style="left:360px;">E3</div>
+    <div class="white-key" data-note="F3" style="left:400px;">F3</div>
+    <div class="black-key" data-note="F#3" style="left:428px;"></div>
+    <div class="white-key" data-note="G3" style="left:440px;">G3</div>
+    <div class="black-key" data-note="G#3" style="left:468px;"></div>
+    <div class="white-key" data-note="A3" style="left:480px;">A3</div>
+    <div class="black-key" data-note="A#3" style="left:508px;"></div>
+    <div class="white-key" data-note="B3" style="left:520px;">B3</div>
+
+    <!-- C4–B4, C5 -->
+    <div class="white-key" data-note="C4" style="left:560px;">C4</div>
+    <div class="black-key" data-note="C#4" style="left:588px;"></div>
+    <div class="white-key" data-note="D4" style="left:600px;">D4</div>
+    <div class="black-key" data-note="D#4" style="left:628px;"></div>
+    <div class="white-key" data-note="E4" style="left:640px;">E4</div>
+    <div class="white-key" data-note="F4" style="left:680px;">F4</div>
+    <div class="black-key" data-note="F#4" style="left:708px;"></div>
+    <div class="white-key" data-note="G4" style="left:720px;">G4</div>
+    <div class="black-key" data-note="G#4" style="left:748px;"></div>
+    <div class="white-key" data-note="A4" style="left:760px;">A4</div>
+    <div class="black-key" data-note="A#4" style="left:788px;"></div>
+    <div class="white-key" data-note="B4" style="left:800px;">B4</div>
+    <div class="white-key" data-note="C5" style="left:840px;">C5</div>
+
+    <!-- C5–C6 -->
+    <div class="black-key" data-note="C#5" style="left:868px;"></div>
+    <div class="white-key" data-note="D5" style="left:880px;">D5</div>
+    <div class="black-key" data-note="D#5" style="left:908px;"></div>
+    <div class="white-key" data-note="E5" style="left:920px;">E5</div>
+    <div class="white-key" data-note="F5" style="left:960px;">F5</div>
+    <div class="black-key" data-note="F#5" style="left:988px;"></div>
+    <div class="white-key" data-note="G5" style="left:1000px;">G5</div>
+    <div class="black-key" data-note="G#5" style="left:1028px;"></div>
+    <div class="white-key" data-note="A5" style="left:1040px;">A5</div>
+    <div class="black-key" data-note="A#5" style="left:1068px;"></div>
+    <div class="white-key" data-note="B5" style="left:1080px;">B5</div>
+    <div class="white-key" data-note="C6" style="left:1120px;">C6</div>
+  </div>
+
+  <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
+  <script src="https://unpkg.com/tone/build/Tone.js"></script>
+  <script>
+    const noteMap = {
+      "C2":"c/2","C#2":"c#/2","D2":"d/2","D#2":"d#/2","E2":"e/2","F2":"f/2","F#2":"f#/2","G2":"g/2","G#2":"g#/2","A2":"a/2","A#2":"a#/2","B2":"b/2",
+      "C3":"c/3","C#3":"c#/3","D3":"d/3","D#3":"d#/3","E3":"e/3","F3":"f/3","F#3":"f#/3","G3":"g/3","G#3":"g#/3","A3":"a/3","A#3":"a#/3","B3":"b/3",
+      "C4":"c/4","C#4":"c#/4","D4":"d/4","D#4":"d#/4","E4":"e/4","F4":"f/4","F#4":"f#/4","G4":"g/4","G#4":"g#/4","A4":"a/4","A#4":"a#/4","B4":"b/4","C5":"c/5",
+      "C#5":"c#/5","D5":"d/5","D#5":"d#/5","E5":"e/5","F5":"f/5","F#5":"f#/5","G5":"g/5","G#5":"g#/5","A5":"a/5","A#5":"a#/5","B5":"b/5","C6":"c/6"
+    };
+
+    const KEY_SIGNATURE_ACCIDENTALS = {
+      // Major keys
+      "C":  [],
+      "G":  ["F#"],
+      "D":  ["F#", "C#"],
+      "A":  ["F#", "C#", "G#"],
+      "E":  ["F#", "C#", "G#", "D#"],
+      "B":  ["F#", "C#", "G#", "D#", "A#"],
+      "F#": ["F#", "C#", "G#", "D#", "A#", "E#"],
+      "C#": ["F#", "C#", "G#", "D#", "A#", "E#", "B#"],
+      "F":  ["Bb"],
+      "Bb": ["Bb", "Eb"],
+      "Eb": ["Bb", "Eb", "Ab"],
+      "Ab": ["Bb", "Eb", "Ab", "Db"],
+      "Db": ["Bb", "Eb", "Ab", "Db", "Gb"],
+      "Gb": ["Bb", "Eb", "Ab", "Db", "Gb", "Cb"],
+
+      // Minor keys (relative minors)
+      "Am": [],
+      "Em": ["F#"],
+      "Bm": ["F#", "C#"],
+      "F#m":["F#", "C#", "G#"],
+      "C#m":["F#", "C#", "G#", "D#"],
+      "G#m":["F#", "C#", "G#", "D#", "A#"],
+      "D#m":["F#", "C#", "G#", "D#", "A#", "E#"],
+      "A#m":["F#", "C#", "G#", "D#", "A#", "E#", "B#"],
+      "Dm": ["Bb"],
+      "Gm": ["Bb", "Eb"],
+      "Cm": ["Bb", "Eb", "Ab"],
+      "Fm": ["Bb", "Eb", "Ab", "Db"],
+      "Bbm":["Bb", "Eb", "Ab", "Db", "Gb"],
+      "Ebm":["Bb", "Eb", "Ab", "Db", "Gb", "Cb"]
+    };
+
+    // Enharmonic equivalents for converting # to b if in a flat key, etc.
+    const ENHARMONIC_EQUIVALENTS_SHARP_TO_FLAT = {
+      "A#": "Bb",
+      "C#": "Db",
+      "D#": "Eb",
+      "F#": "Gb",
+      "G#": "Ab"
+    };
+
+    let currentKeySignature = "C";
+    let currentTimeSignature = "4/4";
+    let [beatsPerMeasure, beatValue] = parseTimeSignature(currentTimeSignature);
+
+    const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+    synth.set({
+      "volume": -8,
+      "envelope": { "decay": 0.5, "release": 0.2, "sustain": 0.6 }
+    });
+
+    const VF = Vex.Flow;
+    const staffDiv = document.getElementById("staff");
+
+    let measures = [ { trebleNotes: [], bassNotes: [] } ];
+    let currentMeasureIndex = 0;
+
+    let chordMode = false;
+    let currentChord = [];
+
+    const undoStack = [];
+    const redoStack = [];
+
+    const toggleChordModeBtn = document.getElementById('toggle-chord-mode');
+    const addChordBtn = document.getElementById('add-chord');
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+
+    toggleChordModeBtn.addEventListener('click', () => {
+      chordMode = !chordMode;
+      toggleChordModeBtn.textContent = "Chord Mode: " + (chordMode ? "ON" : "OFF");
+      if (!chordMode) {
+        currentChord = [];
+        addChordBtn.disabled = true;
+      }
+    });
+
+    addChordBtn.addEventListener('click', () => {
+      if (currentChord.length > 0) {
+        pushStateForUndo();
+        addChordToMeasure(currentChord);
+        currentChord = [];
+        addChordBtn.disabled = true;
+        updateUndoRedoButtons();
+      }
+    });
+
+    document.getElementById('time-signature-select').addEventListener('change', (e) => {
+      pushStateForUndo();
+      currentTimeSignature = e.target.value;
+      [beatsPerMeasure, beatValue] = parseTimeSignature(currentTimeSignature);
+      measures = [ { trebleNotes: [], bassNotes: [] } ];
+      currentMeasureIndex = 0;
+      renderAllMeasures();
+      updateUndoRedoButtons();
+    });
+
+    document.getElementById('key-signature-select').addEventListener('change', (e) => {
+      pushStateForUndo();
+      currentKeySignature = e.target.value;
+      renderAllMeasures();
+      updateUndoRedoButtons();
+    });
+
+    document.getElementById('clear-staff').addEventListener('click', () => {
+      pushStateForUndo();
+      measures = [ { trebleNotes: [], bassNotes: [] } ];
+      currentMeasureIndex = 0;
+      renderAllMeasures();
+      updateUndoRedoButtons();
+    });
+
+    undoBtn.addEventListener('click', () => {
+      undoAction();
+    });
+
+    redoBtn.addEventListener('click', () => {
+      redoAction();
+    });
+
+    function parseTimeSignature(ts) {
+      const [top, bottom] = ts.split('/').map(Number);
+      return [top, bottom];
+    }
+
+    function isTreble(noteName) {
+      const octave = parseInt(noteName[noteName.length - 1], 10);
+      return octave >= 4;
+    }
+
+    function isFlatKey(keySig) {
+      const acc = KEY_SIGNATURE_ACCIDENTALS[keySig] || [];
+      // If any accidental has a 'b', it's a flat key
+      const hasFlat = acc.some(a => a.includes('b'));
+      if (hasFlat) return true;
+
+      // If no flats but sharps present, it's a sharp key.
+      // If none present, it's neutral.
+      return false;
+    }
+
+    function isSharpKey(keySig) {
+      const acc = KEY_SIGNATURE_ACCIDENTALS[keySig] || [];
+      const hasSharp = acc.some(a => a.includes('#'));
+      if (hasSharp && !isFlatKey(keySig)) return true;
+      return false;
+    }
+
+    function normalizeNoteForKey(noteName, keySig) {
+      const pitch = noteName.slice(0, -1); 
+      const octave = noteName.slice(-1);
+
+      let noteLetter = pitch.charAt(0).toUpperCase();
+      let accidental = (pitch.length > 1) ? pitch.charAt(1) : null;
+
+      const accidentalsInKey = KEY_SIGNATURE_ACCIDENTALS[keySig] || [];
+
+      function noteIsInKey(nLetter, acc) {
+        const combined = nLetter.toUpperCase() + (acc ? acc : '');
+        return accidentalsInKey.includes(combined);
+      }
+
+      // Determine key type
+      const flatBased = isFlatKey(keySig);
+      const sharpBased = isSharpKey(keySig);
+
+      if (accidental) {
+        // If the accidental is in key, store without accidental if key covers it.
+        if (noteIsInKey(noteLetter, accidental)) {
+          return noteLetter.toLowerCase() + "/" + octave;
+        } else {
+          // Accidental not covered by the key.
+          // If we're in a flat key and the accidental is '#', try to convert to flat.
+          if (flatBased && accidental === '#') {
+            // Convert pitch to its flat equivalent if possible
+            const enharmonic = ENHARMONIC_EQUIVALENTS_SHARP_TO_FLAT[noteLetter + '#'];
+            if (enharmonic) {
+              // enharmonic like G# -> Ab
+              const enhLetter = enharmonic.charAt(0).toLowerCase();
+              const enhAcc = enharmonic.charAt(1); // 'b'
+              return enhLetter + enhAcc + "/" + octave;
+            }
+          }
+          // If no conversion or not flat-based, keep as is.
+          return noteLetter.toLowerCase() + accidental + "/" + octave;
+        }
+      } else {
+        // No accidental. Just return as is. Key signature will handle if needed.
+        return noteLetter.toLowerCase() + "/" + octave;
+      }
+    }
+
+    function addNoteToMeasure(noteName) {
+      pushStateForUndo();
+      const vexKey = normalizeNoteForKey(noteName, currentKeySignature);
+      const duration = "q";
+
+      const currentMeasure = measures[currentMeasureIndex];
+      if (isTreble(noteName)) {
+        currentMeasure.trebleNotes.push({ keys: [vexKey], duration });
+      } else {
+        currentMeasure.bassNotes.push({ keys: [vexKey], duration });
+      }
+
+      advanceMeasureIfFull(currentMeasure);
+      renderAllMeasures();
+      updateUndoRedoButtons();
+    }
+
+    function addChordToMeasure(noteNames) {
+      const vexKeys = noteNames.map(n => normalizeNoteForKey(n, currentKeySignature));
+      const duration = "q";
+
+      const currentMeasure = measures[currentMeasureIndex];
+      const shouldBeTreble = noteNames.some(n => isTreble(n));
+
+      if (shouldBeTreble) {
+        currentMeasure.trebleNotes.push({ keys: vexKeys, duration });
+      } else {
+        currentMeasure.bassNotes.push({ keys: vexKeys, duration });
+      }
+
+      advanceMeasureIfFull(currentMeasure);
+      renderAllMeasures();
+    }
+
+    function advanceMeasureIfFull(currentMeasure) {
+      const maxLen = Math.max(currentMeasure.trebleNotes.length, currentMeasure.bassNotes.length);
+      if (maxLen >= beatsPerMeasure) {
+        measures.push({ trebleNotes: [], bassNotes: [] });
+        currentMeasureIndex++;
+      }
+    }
+
+    function createStaveNotes(notes, clef) {
+      const needed = beatsPerMeasure - notes.length;
+      for (let i = 0; i < needed; i++) {
+        let restKey = (clef === "treble") ? "b/4" : "d/3";
+        notes.push({ keys: [restKey], duration: "qr" });
+      }
+
+      return notes.map(n => {
+        const staveNote = new VF.StaveNote({ keys: n.keys, duration: n.duration, clef: clef });
+
+        // Set stem direction based on clef
+        if (clef === "bass") {
+          staveNote.setStemDirection(-1);
+        } else {
+          staveNote.setStemDirection(1);
+        }
+
+        if (!n.duration.includes('r')) {
+          n.keys.forEach((key, index) => {
+            const [noteName] = key.split('/');
+            if (noteName.length > 1) {
+              const accidentalChar = noteName.charAt(1);
+              if (accidentalChar === '#') {
+                staveNote.addAccidental(index, new VF.Accidental('#'));
+              } else if (accidentalChar === 'b') {
+                staveNote.addAccidental(index, new VF.Accidental('b'));
+              }
+            }
+          });
+        }
+        return staveNote;
+      });
+    }
+
+    function renderAllMeasures() {
+      staffDiv.innerHTML = "";
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const widthPerMeasure = 400;
+      // Increase totalHeight for more room
+      const totalHeight = 350; 
+      const totalWidth = measures.length * widthPerMeasure + 50;
+
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("width", totalWidth);
+      svg.setAttribute("height", totalHeight);
+      staffDiv.appendChild(svg);
+
+      const renderer = new VF.Renderer(svg, VF.Renderer.Backends.SVG);
+      renderer.resize(totalWidth, totalHeight);
+      const context = renderer.getContext();
+
+      let x = 10;
+
+      for (let i = 0; i < measures.length; i++) {
+        // Adjust vertical positions for more space
+        const staveTreble = new VF.Stave(x, 50, widthPerMeasure);
+        const staveBass = new VF.Stave(x, 200, widthPerMeasure);
+
+        if (i === 0) {
+          staveTreble.addClef("treble").addTimeSignature(currentTimeSignature).addKeySignature(currentKeySignature);
+          staveBass.addClef("bass").addTimeSignature(currentTimeSignature).addKeySignature(currentKeySignature);
+        } else {
+          // On subsequent measures, do not add the key signature again:
+          // Just create blank staves.
+        }
+
+        staveTreble.setContext(context).draw();
+        staveBass.setContext(context).draw();
+
+        if (i === 0) {
+          new VF.StaveConnector(staveTreble, staveBass).setType(VF.StaveConnector.type.BRACE).setContext(context).draw();
+          new VF.StaveConnector(staveTreble, staveBass).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(context).draw();
+        } else {
+          new VF.StaveConnector(staveTreble, staveBass).setType(VF.StaveConnector.type.SINGLE).setContext(context).draw();
+        }
+
+        const trebleStaveNotes = createStaveNotes([...measures[i].trebleNotes], "treble");
+        const bassStaveNotes = createStaveNotes([...measures[i].bassNotes], "bass");
+
+        const trebleVoice = new VF.Voice({num_beats: beatsPerMeasure, beat_value: beatValue});
+        const bassVoice = new VF.Voice({num_beats: beatsPerMeasure, beat_value: beatValue});
+
+        trebleVoice.addTickables(trebleStaveNotes);
+        bassVoice.addTickables(bassStaveNotes);
+
+        new VF.Formatter().joinVoices([trebleVoice]).joinVoices([bassVoice])
+          .format([trebleVoice, bassVoice], widthPerMeasure - 50);
+
+        trebleVoice.draw(context, staveTreble);
+        bassVoice.draw(context, staveBass);
+
+        x += widthPerMeasure;
+      }
+    }
+
+    // History Functions
+    function pushStateForUndo() {
+      const state = {
+        measures: JSON.parse(JSON.stringify(measures)),
+        currentMeasureIndex: currentMeasureIndex,
+        currentTimeSignature: currentTimeSignature,
+        currentKeySignature: currentKeySignature
+      };
+      undoStack.push(state);
+      redoStack.length = 0;
+    }
+
+    function undoAction() {
+      if (undoStack.length > 0) {
+        const currentState = {
+          measures: JSON.parse(JSON.stringify(measures)),
+          currentMeasureIndex: currentMeasureIndex,
+          currentTimeSignature: currentTimeSignature,
+          currentKeySignature: currentKeySignature
+        };
+        redoStack.push(currentState);
+
+        const prevState = undoStack.pop();
+        measures = JSON.parse(JSON.stringify(prevState.measures));
+        currentMeasureIndex = prevState.currentMeasureIndex;
+        currentTimeSignature = prevState.currentTimeSignature;
+        currentKeySignature = prevState.currentKeySignature;
+        [beatsPerMeasure, beatValue] = parseTimeSignature(currentTimeSignature);
+        renderAllMeasures();
+        updateUndoRedoButtons();
+      }
+    }
+
+    function redoAction() {
+      if (redoStack.length > 0) {
+        const currentState = {
+          measures: JSON.parse(JSON.stringify(measures)),
+          currentMeasureIndex: currentMeasureIndex,
+          currentTimeSignature: currentTimeSignature,
+          currentKeySignature: currentKeySignature
+        };
+        undoStack.push(currentState);
+
+        const nextState = redoStack.pop();
+        measures = JSON.parse(JSON.stringify(nextState.measures));
+        currentMeasureIndex = nextState.currentMeasureIndex;
+        currentTimeSignature = nextState.currentTimeSignature;
+        currentKeySignature = nextState.currentKeySignature;
+        [beatsPerMeasure, beatValue] = parseTimeSignature(currentTimeSignature);
+        renderAllMeasures();
+        updateUndoRedoButtons();
+      }
+    }
+
+    function updateUndoRedoButtons() {
+      undoBtn.disabled = (undoStack.length === 0);
+      redoBtn.disabled = (redoStack.length === 0);
+    }
+
+    document.querySelectorAll('#piano [data-note]').forEach(key => {
+      key.addEventListener('click', async () => {
+        const noteName = key.getAttribute('data-note');
+        if (Tone.context.state !== 'running') {
+          await Tone.start();
+        }
+        synth.triggerAttackRelease(noteName, "8n");
+
+        if (chordMode) {
+          currentChord.push(noteName);
+          addChordBtn.disabled = false;
+        } else {
+          addNoteToMeasure(noteName);
+        }
+      });
+    });
+
+    const keyToNoteMap = {
+      'a': 'C4',
+      'w': 'C#4',
+      's': 'D4',
+      'e': 'D#4',
+      'd': 'E4',
+      'f': 'F4',
+      't': 'F#4',
+      'g': 'G4',
+      'y': 'G#4',
+      'h': 'A4',
+      'u': 'A#4',
+      'j': 'B4',
+      'k': 'C5',
+      'o': 'C#5',
+      'l': 'D5',
+      'p': 'D#5',
+      ';': 'E5'
+    };
+
+    document.addEventListener('keydown', async (e) => {
+      const key = e.key.toLowerCase();
+      if (keyToNoteMap[key]) {
+        const noteName = keyToNoteMap[key];
+        if (Tone.context.state !== 'running') {
+          await Tone.start();
+        }
+        synth.triggerAttackRelease(noteName, "8n");
+
+        if (chordMode) {
+          currentChord.push(noteName);
+          addChordBtn.disabled = false;
+        } else {
+          addNoteToMeasure(noteName);
+        }
+      }
+    });
+
+    renderAllMeasures();
+    updateUndoRedoButtons();
+  </script>
+</body>
+</html>
