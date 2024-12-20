@@ -10,6 +10,11 @@
             font-family: "Trebuchet MS", sans-serif;
             margin: 0;
             padding: 0;
+            width: 100%;
+            max-width: 100%;
+            min-height: 95vh;
+            height: 100%;
+            overflow-x: hidden;
             background: linear-gradient(135deg, #f1f1f1 0%, #fff 100%);
             color: #1a1a1a;
         }
@@ -68,11 +73,11 @@
         .controls {
             display: flex;
             flex-direction: row;
-            flex-wrap: wrap;
-            align-content: start;
+            flex-wrap: nowrap;
+            /* align-content: start; */
             align-items: start;
             justify-content: space-evenly;
-            gap: 0;
+            gap: 10px;
         }
 
         .duration-toolbar {
@@ -153,15 +158,16 @@
         .black-key:hover {
             background: #333;
         }
+
         #time-signature-select,
         #clear-staff,
         #add-chord,
         #undo-btn,
         #redo-btn,
         #key-signature-select,
-        #toggle-chord-mode,
-        #rest-toggle {
-            border: 1px solid #000;
+        #rest-toggle,
+        #toggle-chord-mode {
+            border: 2px solid #000;
             border-radius: 5px;
             color: #000;
             background: #fff;
@@ -172,12 +178,41 @@
             padding: 0.5em;
             cursor: pointer;
             transition: all 0.5s;
-            margin:5px;
+            margin: 5px;
         }
-        #clear-staff{
+
+        #clear-staff {
             border: 1px solid #1a1a1a;
             color: #1a1a1a;
             background: #fff;
+        }
+
+        #toggle-chord-mode {
+            border: 1px solid #1a1a1a;
+            color: #1a1a1a;
+            background: gold;
+        }
+
+        #rest-toggle {
+            border: 1px solid #1a1a1a;
+            color: white;
+            background: purple;
+        }
+
+        #time-signature-select,
+        #key-signature-select {
+            border: 2px solid #000;
+            border-radius: 5px;
+            color: #000;
+            background: #fff;
+            text-transform: uppercase;
+            font-size: 14px;
+            line-height: 1;
+            font-weight: bold;
+            padding: .4em;
+            cursor: pointer;
+            transition: all 0.5s;
+            margin: 5px;
         }
 
         #time-signature-select:hover,
@@ -191,7 +226,7 @@
         }
 
         .duration-button {
-            border: 1px solid #006ba4;
+            border: 2px solid #006ba4;
             border-radius: 5px;
             color: #006ba4;
             background: #fff;
@@ -202,43 +237,48 @@
             padding: 0.5em;
             cursor: pointer;
             transition: all 0.5s;
-            margin:5px;
+            margin: 5px;
         }
 
         .duration-button:hover {
             background: #006ba4;
             color: white;
             font-weight: bold;
-            border: 1px solid darkblue;
+            border: 2px solid darkblue;
         }
 
         .duration-button:focus {
-            background: #1a1a1a;
+            background: #006ba4;
             color: white;
-            border: 1px solid #006ba4;
+            font-weight: bold;
+            border: 2px outset darkblue;
         }
 
         .duration-selected {
             background: #006ba4;
             color: white;
             font-weight: bold;
-            border: 1px solid darkblue;
+            border: 2px outset darkblue;
         }
-        #redo-btn{
-            color:darkgreen;
-            border:1px solid darkgreen;
+
+        #redo-btn {
+            color: darkgreen;
+            border: 2px solid darkgreen;
             box-shadow: inset 0 0 0 0 darkgreen;
         }
-        #redo-btn:hover{
+
+        #redo-btn:hover {
             background: darkgreen;
             color: white;
             box-shadow: inset 0 0 0 100vmax darkgreen;
         }
-        #undo-btn{
-            color:darkred;
-            border:1px solid darkred;
+
+        #undo-btn {
+            color: darkred;
+            border: 2px solid darkred;
         }
-        #undo-btn:hover{
+
+        #undo-btn:hover {
             background: darkred;
             color: white;
         }
@@ -251,6 +291,17 @@
             box-shadow: inset 0 0 0 100vmax #1481ba;
             color: #fff;
         } */
+        @media screen and (max-width:1024px) {
+            .controls {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+                /* align-content: start; */
+                align-items: start;
+                justify-content: space-between;
+                gap: 10px;
+            }
+        }
     </style>
 </head>
 
@@ -303,23 +354,22 @@
                             <option value="Bbm">Bb Minor</option>
                             <option value="Ebm">Eb Minor</option>
                         </select>
-
-                        <button id="toggle-chord-mode" class="box-in">Chord Mode: OFF</button>
-                        <button id="add-chord" disabled>Add Chord</button>
                     </div>
 
                     <!--duration controls-->
-                    <div id="duration-toolbar">
+                    <div class="duration-toolbar">
                         <button class="duration-button" data-duration="w">Whole</button>
                         <!-- <button class="duration-button" data-duration="h.">Dotted Half (1.5)</button> -->
                         <button class="duration-button" data-duration="h">Half</button>
                         <button class="duration-button duration-selected" data-duration="q">Quarter</button>
                         <button class="duration-button" data-duration="8">Eighth</button>
                         <button class="duration-button" id="rest-toggle">Rest Mode: OFF</button>
+                        <button id="toggle-chord-mode" class="box-in">Chord Mode: OFF</button>
+                        <button id="add-chord" disabled>Add Chord</button>
                     </div>
 
                     <div class="col-2">
-                        <button id="clear-staff" class="box-in">Clear Staff</button>
+                        <button id="clear-staff" class="box-in">Clear</button>
                         <button id="undo-btn" class="undo" disabled>Undo</button>
                         <button id="redo-btn" class="redo" disabled>Redo</button>
                     </div>
